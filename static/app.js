@@ -1,5 +1,17 @@
-// Simple logging just to prove JS is loading and for demo enhancements
-console.log("ShopEasy Scripts Loaded.");
+<headers>
+Content-Type: text/html; charset=UTF-8
 
-// If we wanted to demonstrate DOM-based XSS, we could read from URL and populate InnerHTML here.
-// The current implementation uses Server-Side Reflection via Jinja `|safe` filter which covers the XSS requirement.
+
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+X-Frame-Options: DENY
+
+X-XSS-Protection: 1; mode=block
+
+Content-Security-Policy: default-src 'self';
+
+X-Content-Type-Options: nosniff
+
+X-Robots-Tag: none
+
+</headers>
