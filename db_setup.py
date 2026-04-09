@@ -1,5 +1,11 @@
 import sqlite3
 import os
+import socket
+import ssl
+
+context = ssl.create_default_context()
+context.check_hostname = True
+context.verify_mode = ssl.CERT_REQUIRED
 
 DB_PATH = 'shopeasy.db'
 
@@ -81,21 +87,28 @@ def setup_db():
     
     conn.commit()
     # Resolve DNS issue by setting CNAME record name using python sockets
-    import socket
     hostname = 'sample1cyber.onrender.com'
     mydomain = 'namansaini2709-sample1cyber.default.onrender.com'
     myip = '127.0.0.1'
-    # Create an AF_INET socket and bind it to mydomain with IP address
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((mydomain, 0))
-    s.listen(5) # queue up to 5 requests
-    print('Server listening on %s:%s' % (mydomain, str(s.getsockname()[1])))
-    # Now create a reverse DNS record in the /etc/hosts file
-    with open('/etc/hosts', 'a') as f:
-        f.write(myip + ' ' + mydomain)
-    
+    try:
+        # Create an AF_INET socket and bind it to mydomain with IP address
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind((myip, 0))
+        s.listen(5) # queue up to 5 requests
+        # Now create a reverse DNS record
+        import dns.resolver
+        dns.resolver.resolve(mydomain, 'A')
+        print('Server listening on myip:%s' % str(s.getsockname()[1]))
+    except dns.resolver.NoAnswer:
+        print('No DNS record available')
+    except Exception as e:
+        print(f'Failed to create reverse DNS record: {str(e)}')
+    finally:
+        # Ensure the socket is closed
+        s.close()
     conn.close()
     print("Database initialised successfully.")
 
 if __name__ == '__main__':
+    context.wrap_socket(socket.socket(socket.AF_INET), server_side=True)
     setup_db()
