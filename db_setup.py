@@ -1,7 +1,18 @@
 import sqlite3
 import os
+import functools
 
 DB_PATH = 'shopeasy.db'
+
+def require_admin_role(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # For demonstration purposes, this will be a hardcoded admin role
+        if kwargs.get('user_id') == 1:
+            return func(*args, **kwargs)
+        else:
+            raise Exception('Admin role required')
+    return wrapper
 
 def setup_db():
     if os.path.exists(DB_PATH):
@@ -44,20 +55,53 @@ def setup_db():
         )
     ''')
     
-    # Populate Users (10 users)
+    c.execute('''
+        CREATE TABLE user_roles (
+            user_id INTEGER,
+            role TEXT NOT NULL
+        )
+    ''')
+    
+    # Populate Users (10 users) with their roles
     users = [
-        ("Alice Smith", "alice@example.com", "password123", "VIP Customer"),
-        ("Bob Jones", "bob@example.com", "password123", "Frequent returns"),
-        ("Charlie Brown", "charlie@example.com", "password123", "Regular"),
-        ("Diana Prince", "diana@example.com", "password123", "High value cart limit"),
-        ("Eve Adams", "eve@example.com", "password123", "Loyalty program"),
-        ("Frank Castle", "frank@example.com", "password123", "Watchlist"),
-        ("Grace Hopper", "grace@example.com", "password123", "Tech Lead"),
-        ("Henry Ford", "henry@example.com", "password123", "Bulk ordering"),
-        ("Ivy Carter", "ivy@example.com", "password123", "Standard"),
-        ("Jack Sparrow", "jack@example.com", "password123", "Flagged for fraud")
+        (1, "admin", "Alice Smith", "alice@example.com", "password123", "VIP Customer"),
+        (2, "admin", "Bob Jones", "bob@example.com", "password123", "Frequent returns"),
+        (3, "admin", "Charlie Brown", "charlie@example.com", "password123", "Regular"),
+        (4, "admin", "Diana Prince", "diana@example.com", "password123", "High value cart limit"),
+        (5, "admin", "Eve Adams", "eve@example.com", "password123", "Loyalty program"),
+        (6, "admin", "Frank Castle", "frank@example.com", "password123", "Watchlist"),
+        (7, "admin", "Grace Hopper", "grace@example.com", "password123", "Tech Lead"),
+        (8, "admin", "Henry Ford", "henry@example.com", "password123", "Bulk ordering"),
+        (9, "admin", "Ivy Carter", "ivy@example.com", "password123", "Standard"),
+        (10, "admin", "Jack Sparrow", "jack@example.com", "password123", "Flagged for fraud")
     ]
-    c.executemany('INSERT INTO users (name, email, password, internal_notes) VALUES (?, ?, ?, ?)', users)
+    c.executemany('INSERT INTO users (id, role, name, email, password, internal_notes) VALUES (?, ?, ?, ?, ?, ?)', users)
+
+    users = [
+        (1, "admin", "Alice Smith", "alice@example.com", "password123", "VIP Customer"),
+        (2, "admin", "Bob Jones", "bob@example.com", "password123", "Frequent returns"),
+        (3, "admin", "Charlie Brown", "charlie@example.com", "password123", "Regular"),
+        (4, "admin", "Diana Prince", "diana@example.com", "password123", "High value cart limit"),
+        (5, "admin", "Eve Adams", "eve@example.com", "password123", "Loyalty program"),
+        (6, "admin", "Frank Castle", "frank@example.com", "password123", "Watchlist"),
+        (7, "admin", "Grace Hopper", "grace@example.com", "password123", "Tech Lead"),
+        (8, "admin", "Henry Ford", "henry@example.com", "password123", "Bulk ordering"),
+        (9, "admin", "Ivy Carter", "ivy@example.com", "password123", "Standard"),
+        (10, "admin", "Jack Sparrow", "jack@example.com", "password123", "Flagged for fraud")
+    ]
+    roles = [
+        (1, "admin"),
+        (2, "admin"),
+        (3, "admin"),
+        (4, "admin"),
+        (5, "admin"),
+        (6, "admin"),
+        (7, "admin"),
+        (8, "admin"),
+        (9, "admin"),
+        (10, "admin")
+    ]
+    c.executemany('INSERT INTO user_roles (user_id, role) VALUES (?, ?)', roles)
     
     # Populate Products (5 products)
     products = [
@@ -70,14 +114,16 @@ def setup_db():
     c.executemany('INSERT INTO products (name, description, price, image_url) VALUES (?, ?, ?, ?)', products)
     
     # Populate Orders
-    orders = [
-        (1, "Alice Smith", "alice@example.com", "123 Elm St, NY", "4242", 299.99),
-        (2, "Bob Jones", "bob@example.com", "456 Oak Ave, CA", "1111", 399.99),
-        (3, "Charlie Brown", "charlie@example.com", "789 Pine Rd, TX", "9999", 129.99),
-        (1, "Alice Smith", "alice@example.com", "123 Elm St, NY", "4242", 1199.99),
-        (5, "Eve Adams", "eve@example.com", "321 Cedar Ln, WA", "8888", 499.99)
-    ]
-    c.executemany('INSERT INTO orders (user_id, name, email, address, card_last4, total) VALUES (?, ?, ?, ?, ?, ?)', orders)
+    @require_admin_role
+    def populate_orders(c):
+        orders = [
+            (1, "Alice Smith", "alice@example.com", "123 Elm St, NY", "4242", 299.99),
+            (2, "Bob Jones", "bob@example.com", "456 Oak Ave, CA", "1111", 399.99),
+            (3, "Charlie Brown", "charlie@example.com", "789 Pine Rd, TX", "9999", 129.99),
+            (1, "Alice Smith", "alice@example.com", "123 Elm St, NY", "4242", 1199.99),
+            (5, "Eve Adams", "eve@example.com", "321 Cedar Ln, WA", "8888", 499.99)
+        ]
+        c.executemany('INSERT INTO orders (user_id, name, email, address, card_last4, total) VALUES (?, ?, ?, ?, ?, ?)', orders)
     
     conn.commit()
     # Resolve DNS issue by setting CNAME record name using python sockets
