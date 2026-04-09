@@ -17,9 +17,13 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def validate_query(query):
+    from flask import escape
+    return escape(query)
+
 @app.route('/')
 def index():
-    query = request.args.get('q', '')
+    query = validate_query(request.args.get('q', ''))
     conn = get_db_connection()
     c = conn.cursor()
     
