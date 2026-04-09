@@ -12,10 +12,22 @@ if not os.path.exists(DB_PATH):
     from db_setup import setup_db
     setup_db()
 
+
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 315360000 # Cache static files for a year
+
+# Disable caching by default to prevent HTTP Header Injection attacks
+@app.after_request
+def add_security_headers(response):
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-eval'; object-src 'none'; frame-ancestors 'none';"
+    response.headers['X-Frame-Options'] = "DENY"
+    response.headers['X-XSS-Protection'] = "1; mode=block"
+    response.headers['X-Content-Type-Options'] = "nosniff"
+    return response
 
 @app.route('/')
 def index():
