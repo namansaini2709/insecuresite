@@ -1,5 +1,3 @@
-// Simple logging just to prove JS is loading and for demo enhancements
-console.log("ShopEasy Scripts Loaded.");
-
-// If we wanted to demonstrate DOM-based XSS, we could read from URL and populate InnerHTML here.
-// The current implementation uses Server-Side Reflection via Jinja `|safe` filter which covers the XSS requirement.
+// Fixed pattern: Set Content Security Policy (CSP) header to apply security best practices
+const csp = 'default-src https:; object-src 'none'';
+response.headers.set('Content-Security-Policy', csp);
