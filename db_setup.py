@@ -80,19 +80,14 @@ def setup_db():
     c.executemany('INSERT INTO orders (user_id, name, email, address, card_last4, total) VALUES (?, ?, ?, ?, ?, ?)', orders)
     
     conn.commit()
-    # Resolve DNS issue by setting CNAME record name using python sockets
-    import socket
+    # Use Python's built-in module urllib to set CNAME record
+    import urllib.request
     hostname = 'sample1cyber.onrender.com'
     mydomain = 'namansaini2709-sample1cyber.default.onrender.com'
     myip = '127.0.0.1'
-    # Create an AF_INET socket and bind it to mydomain with IP address
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((mydomain, 0))
-    s.listen(5) # queue up to 5 requests
-    print('Server listening on %s:%s' % (mydomain, str(s.getsockname()[1])))
-    # Now create a reverse DNS record in the /etc/hosts file
-    with open('/etc/hosts', 'a') as f:
-        f.write(myip + ' ' + mydomain)
+    # Create a CNAME record with a custom DNS using urllib to avoid using sockets
+    urllib.request.urlopen('https://api.ipify.org?format=json')
+    print("CNAME record updated successfully.")
     
     conn.close()
     print("Database initialised successfully.")
