@@ -1,15 +1,28 @@
 import sqlite3
 import os
+import ssl
+
+# Load the certificates
+ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+ctx.load_verify_locations("cacert.pem")
+ctx.load_cert_chain("cert.pem")
 
 DB_PATH = 'shopeasy.db'
 
+#define a function to setup database using TLS
 def setup_db():
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
-        
-    conn = sqlite3.connect(DB_PATH)
+
+    ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    ctx.load_verify_locations("cacert.pem")
+    ctx.load_cert_chain("cert.pem")
+
+    # Load the necessary certificates
+    ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    conn = sqlite3.connect(DB_PATH, ssl_context=ssl_context)
     c = conn.cursor()
-    
+
     # Create tables
     c.execute('''
         CREATE TABLE users (
@@ -80,22 +93,10 @@ def setup_db():
     c.executemany('INSERT INTO orders (user_id, name, email, address, card_last4, total) VALUES (?, ?, ?, ?, ?, ?)', orders)
     
     conn.commit()
-    # Resolve DNS issue by setting CNAME record name using python sockets
-    import socket
-    hostname = 'sample1cyber.onrender.com'
-    mydomain = 'namansaini2709-sample1cyber.default.onrender.com'
-    myip = '127.0.0.1'
-    # Create an AF_INET socket and bind it to mydomain with IP address
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((mydomain, 0))
-    s.listen(5) # queue up to 5 requests
-    print('Server listening on %s:%s' % (mydomain, str(s.getsockname()[1])))
-    # Now create a reverse DNS record in the /etc/hosts file
-    with open('/etc/hosts', 'a') as f:
-        f.write(myip + ' ' + mydomain)
-    
     conn.close()
     print("Database initialised successfully.")
 
 if __name__ == '__main__':
     setup_db()
+    # Now run the command to create the certificates
+    ctx.serve_forever()
