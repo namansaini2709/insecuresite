@@ -32,8 +32,8 @@ def index():
     products = c.fetchall()
     conn.close()
     
-    # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
-    return render_template('index.html', products=products, query=query)
+    # XSS vulnerability: Prevent rendering user input to template
+    return render_template('index.html', products=products)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -120,7 +120,8 @@ def user_profile():
     conn.close()
     
     if user:
-        # VULNERABLE: Returning full user object including password hash and internal notes
+        # Prevent returning the password hash
+        user['password'] = None
         return jsonify(dict(user))
     return jsonify({"error": "User not found"}), 404
 
