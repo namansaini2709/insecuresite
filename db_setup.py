@@ -1,13 +1,18 @@
 import sqlite3
 import os
+import ssl
 
 DB_PATH = 'shopeasy.db'
+
+context = ssl.create_default_context()
+context.options &= ~(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+context.set_ciphers('HIGH:ALL:@STRENGTH')
 
 def setup_db():
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
         
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, ssl_context=context)
     c = conn.cursor()
     
     # Create tables
