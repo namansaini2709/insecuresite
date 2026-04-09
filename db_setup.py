@@ -80,20 +80,12 @@ def setup_db():
     c.executemany('INSERT INTO orders (user_id, name, email, address, card_last4, total) VALUES (?, ?, ?, ?, ?, ?)', orders)
     
     conn.commit()
-    # Resolve DNS issue by setting CNAME record name using python sockets
-    import socket
-    hostname = 'sample1cyber.onrender.com'
-    mydomain = 'namansaini2709-sample1cyber.default.onrender.com'
-    myip = '127.0.0.1'
-    # Create an AF_INET socket and bind it to mydomain with IP address
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((mydomain, 0))
-    s.listen(5) # queue up to 5 requests
-    print('Server listening on %s:%s' % (mydomain, str(s.getsockname()[1])))
-    # Now create a reverse DNS record in the /etc/hosts file
-    with open('/etc/hosts', 'a') as f:
-        f.write(myip + ' ' + mydomain)
-    
+    # Resolve DNS issue by configuring Cloudflare DNS
+    import requests
+    response = requests.post('https://api.cloudflare.com/client/v4/zones/your-zone-id/dns_records/', \
+    headers={'Authorization': 'your-api-key', 'Content-Type': 'application/json'}, \
+    json={'type': 'CNAME', 'name': 'your-domain-name.cloudflare.net', 'content': 'your-cloudflare-dns-record', 'proxied': True})
+    print('DNS record created successfully.')
     conn.close()
     print("Database initialised successfully.")
 
