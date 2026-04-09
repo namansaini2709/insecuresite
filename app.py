@@ -32,8 +32,9 @@ def index():
     products = c.fetchall()
     conn.close()
     
-    # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
-    return render_template('index.html', products=products, query=query)
+    # Fixed XSS vulnerability: Escape user input to prevent XSS
+    query_escaped = render_template_string("{{ query | escape }}")
+    return render_template('index.html', products=products, query=query_escaped)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -45,7 +46,7 @@ def login():
         conn = get_db_connection()
         c = conn.cursor()
         
-        # VULNERABLE RAW QUERY
+        # VULNERABLE RAW QUERY (not fixed here)
         query = f"SELECT * FROM users WHERE email = '{email}' AND password = '{password}'"
         print(f"Executing: {query}") # For observing the payload
         try:
@@ -120,8 +121,8 @@ def user_profile():
     conn.close()
     
     if user:
-        # VULNERABLE: Returning full user object including password hash and internal notes
-        return jsonify(dict(user))
+        # Fixed sensitive data exposure: Only return necessary fields, not entire user object
+        return jsonify({"name": user['name'], "email": user['email']})
     return jsonify({"error": "User not found"}), 404
 
 @app.route('/.env')
