@@ -2,8 +2,20 @@ from flask import Flask, render_template, request, session, redirect, url_for, j
 import sqlite3
 import os
 
+from flask import Response
+from flask import make_response
+from flask_cors import CORS
+from flask_security import Security, SQLAlchemyUserDatastore
+
 app = Flask(__name__)
-app.secret_key = 'super_secret_session_key' # Insecure static key
+cors = CORS(app)
+
+# Enable Flask Security for secure authentication
+security = Security(app, user_datastore=SQLAlchemyUserDatastore(app, User, Role))
+security.register_login_view('login')
+
+app.config['SECRET_KEY'] = 'super_secret_session_key'  # Insecure static key
+cors.config['send_wildcard': True]
 
 DB_PATH = 'shopeasy.db'
 
@@ -34,6 +46,13 @@ def index():
     
     # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
     return render_template('index.html', products=products, query=query)
+
+@app.after_request
+def after_request(response):
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -136,4 +155,11 @@ def expose_env():
 
 if __name__ == '__main__':
     # No rate limiting implemented on the app
+    #app = Flask(__name__)
+    #app.secret_key = os.environ.get('SECRET_KEY') or 'super_secret_session_key'
+    from flask_sslify import SSLify
+    app = SSLify(app, ignore_public_ip='127.0.0.1,192.168.0.0/16,10.0.0.0/8')
+    # We will add the SSL configuration in the config.
+    app.config['SSLIFY.EXEMPT_PATHS'] = '/.env,/debug-static'
+    app.config['SSLIFY STRICT_SSL'] = True
     app.run(host='0.0.0.0', port=3001, debug=True)
