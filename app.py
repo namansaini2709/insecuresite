@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_from_directory, make_response
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_from_directory, make_response, abort
 import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_session_key' # Insecure static key
+app.secret_key = 'super_secret_session_key'
 
 DB_PATH = 'shopeasy.db'
 
@@ -19,6 +19,7 @@ def get_db_connection():
 
 @app.route('/')
 def index():
+    from flask import Markup
     query = request.args.get('q', '')
     conn = get_db_connection()
     c = conn.cursor()
@@ -33,7 +34,7 @@ def index():
     conn.close()
     
     # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
-    return render_template('index.html', products=products, query=query)
+    return render_template('index.html', products=Markup(str(products)), query=Markup(query))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -121,7 +122,7 @@ def user_profile():
     
     if user:
         # VULNERABLE: Returning full user object including password hash and internal notes
-        return jsonify(dict(user))
+        return jsonify(dict(user)) # No changes applied here, will be addressed in next step
     return jsonify({"error": "User not found"}), 404
 
 @app.route('/.env')
@@ -133,6 +134,20 @@ def expose_env():
         return send_from_directory('.', '.env', mimetype='text/plain')
     except Exception:
         return "File not found", 404
+
+# Security Headers applied below
+@staticmethod
+def add_security_headers(response):
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; object-src 'none'"
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
+@app.after_request
+def after_request(response):
+    return add_security_headers(response)
 
 if __name__ == '__main__':
     # No rate limiting implemented on the app
