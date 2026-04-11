@@ -1,9 +1,13 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_from_directory, make_response
 import sqlite3
 import os
+importHelmet
+import flask_cors
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_session_key' # Insecure static key
+app.config['SQLALCHEMY_DATABASEURI'] = 'sqlite:///shopeasy.db'
+cors = flask_cors.CORS(app)
 
 DB_PATH = 'shopeasy.db'
 
@@ -34,6 +38,18 @@ def index():
     
     # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
     return render_template('index.html', products=products, query=query)
+
+@app.after_request
+
+def add_headers(response):
+    response.headers['Content-Security-Policy'] = 'upgrade-insecure-requests ; default-src https: data: ; child-src self ; upgrade-insecure-requests; '
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -133,6 +149,11 @@ def expose_env():
         return send_from_directory('.', '.env', mimetype='text/plain')
     except Exception:
         return "File not found", 404
+
+from flask_sqlalchemy import SQLAlchemy
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopeasy.db'
+sqlalchemy = SQLAlchemy(app)
 
 if __name__ == '__main__':
     # No rate limiting implemented on the app
