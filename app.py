@@ -1,9 +1,21 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_from_directory, make_response
 import sqlite3
 import os
+from flask import Response
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_session_key' # Insecure static key
+
+customHeaders = {'Content-Security-Policy': 'default-src \'self\'',
+                         'X-Frame-Options': 'SAMEORIGIN',
+                         'X-Content-Type-Options': 'nosniff',
+                         'X-Download-Options': 'noopen',
+                         'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+                         'X-XSS-Protection': '1; mode=block',
+                         'Referrer-Policy': 'same-origin',
+                         'Permissions-Policy': 'camera=(), microphone=()',
+                         'Features-Policy': 'geolocation=()'}
+app.config.update(customHeaders)
 
 DB_PATH = 'shopeasy.db'
 
@@ -33,7 +45,9 @@ def index():
     conn.close()
     
     # XSS vulnerability: Render query directly to template (we'll implement the actual XSS in the template)
-    return render_template('index.html', products=products, query=query)
+    response = make_response(render_template('index.html', products=products, query=query))
+    response.headers.update(dict(customHeaders))
+    return response
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -79,7 +93,9 @@ def product(product_id):
     conn.close()
     if not product:
         return "Not found", 404
-    return render_template('product.html', product=product)
+    response = make_response(render_template('product.html', product=product))
+    response.headers.update(dict(customHeaders))
+    return response
 
 @app.route('/orders')
 def orders():
@@ -121,7 +137,9 @@ def user_profile():
     
     if user:
         # VULNERABLE: Returning full user object including password hash and internal notes
-        return jsonify(dict(user))
+        response = jsonify(dict(user))
+        response.headers.update(dict(customHeaders))
+        return response
     return jsonify({"error": "User not found"}), 404
 
 @app.route('/.env')
