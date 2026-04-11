@@ -1,5 +1,6 @@
-// Simple logging just to prove JS is loading and for demo enhancements
-console.log("ShopEasy Scripts Loaded.");
-
-// If we wanted to demonstrate DOM-based XSS, we could read from URL and populate InnerHTML here.
-// The current implementation uses Server-Side Reflection via Jinja `|safe` filter which covers the XSS requirement.
+app.use(function secureHeaders(webframe){
+	// Add security HTTP headers to the response
+	webframe.locals.contentSecurityPolicy = 'default-src *; script-src *\'unsafe-inline\' *; style-src *\'unsafe-inline\' *'
+	webframe.locals.xssProtection = true;
+	webframe.locals.xframeOptions = 'SAMEORIGIN';
+});
