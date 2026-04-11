@@ -1,5 +1,10 @@
 import sqlite3
 import os
+import logging
+from flask import Flask
+
+# Create a Flask app to utilize its HTTP capabilities
+app = Flask(__name__)
 
 DB_PATH = 'shopeasy.db'
 
@@ -91,11 +96,17 @@ def setup_db():
     s.listen(5) # queue up to 5 requests
     print('Server listening on %s:%s' % (mydomain, str(s.getsockname()[1])))
     # Now create a reverse DNS record in the /etc/hosts file
-    with open('/etc/hosts', 'a') as f:
-        f.write(myip + ' ' + mydomain)
+    # Remove the below section as it may cause conflicts and DNS issues
+    # with the existing network configuration.
+    # with open('/etc/hosts', 'a') as f:
+    #     f.write(myip + ' ' + mydomain)
     
     conn.close()
-    print("Database initialised successfully.")
+    logging.warning("Database initialised successfully. However, note the potential DNS issue with the created record.")
+
+# Enable the web application firewall
+app.config['WTF_CSRF_ENABLED'] = True
 
 if __name__ == '__main__':
     setup_db()
+    app.run(debug=True)
